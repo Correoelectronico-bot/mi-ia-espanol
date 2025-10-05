@@ -2,6 +2,21 @@ const express = require('express');
 const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
+import express from "express";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.post("/api/ia", async (req, res) => {
+  const { mensaje } = req.body;
+
+  // Aquí va tu lógica de IA (por ejemplo llamada a OpenAI)
+  res.json({ respuesta: "Hola, tu IA está activa correctamente 🚀" });
+});
+
+app.listen(3000, () => console.log("Servidor en puerto 3000"));
 
 // ✅ CORS completo (obligatorio para navegadores)
 app.use((req, res, next) => {
