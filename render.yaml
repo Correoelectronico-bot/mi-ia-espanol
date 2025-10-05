@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: mi-ia-espanol
+    env: python
+    region: oregon
+    plan: free
