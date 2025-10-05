@@ -1,22 +1,52 @@
 // server.js
-const express = require('express');
+import express from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+import fetch from "node-fetch";
+
+dotenv.config();
 const app = express();
-const PORT = 3000;
-
-// Permitir que el frontend se comunique con el backend
+app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Ruta del chat: responde con un mensaje fijo (sin IA)
-app.post('/api/chat', (req, res) => {
-  const userMessage = req.body.message;
-  console.log('📩 Mensaje del usuario:', userMessage);
-  
-  // Respuesta fija (¡esto SIEMPRE funciona!)
-  res.json({ reply: "¡Recibido! Dijiste: " + userMessage });
+// simple rate limiter
+const limiter = rateLimit({ windowMs: 60 * 1000, max: 60 }); // 60 req/min
+app.use(limiter);
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+if (!OPENAI_API_KEY) {
+  console.warn("No OPENAI_API_KEY provided in env");
+}
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { messages } = req.body; // messages: [{role:'user'|'assistant'|'system', content:''}, ...]
+    if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: "messages array required" });
+
+    // Example using OpenAI Chat Completions (adjust model name if needed)
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini", // cambia por el modelo que tengas permitido
+        messages,
+        max_tokens: 800,
+        temperature: 0.7
+      })
+    });
+    const data = await resp.json();
+    // standard: data.choices[0].message
+    const reply = data?.choices?.[0]?.message || { role: "assistant", content: "" };
+    res.json({ reply });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "server error" });
+  }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log('✅ Servidor corriendo en http://localhost:3000');
-});
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server listening on ${PORT}`));
