@@ -11,6 +11,19 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
+app.post("/api/ia", async (req, res) => {
+  const mensaje = req.body.mensaje.toLowerCase();
+
+  // Si el usuario pregunta la fecha o el día
+  if (mensaje.includes("qué día") || mensaje.includes("fecha")) {
+    const fecha = new Date();
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
+    return res.json({ respuesta: `Hoy es ${fechaFormateada}.` });
+  }
+
+  // ... aquí sigue tu llamada normal al modelo IA ...
+});
 
 app.use(express.json());
 
