@@ -1,165 +1,46 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat IA</title>
+  <meta charset="UTF-8">
+  <title>Chatbot con OpenAI</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa, #e4edf9);
-      margin: 0;
-      padding: 20px;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    #chat-container {
-      width: 100%;
-      max-width: 700px;
-      height: 90vh;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    #chat-messages {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-    }
-    .message {
-      max-width: 80%;
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      border-radius: 18px;
-      line-height: 1.4;
-      position: relative;
-      word-wrap: break-word;
-    }
-    .user {
-      background-color: #007bff;
-      color: white;
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-    }
-    .bot {
-      background-color: #f1f1f1;
-      color: #333;
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-    }
-    #input-area {
-      display: flex;
-      padding: 15px;
-      background-color: #fff;
-      border-top: 1px solid #eee;
-    }
-    #user-input {
-      flex: 1;
-      padding: 12px 16px;
-      border: 1px solid #ddd;
-      border-radius: 24px;
-      font-size: 16px;
-      outline: none;
-    }
-    #user-input:focus {
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
-    }
-    #send-btn {
-      margin-left: 10px;
-      padding: 12px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 24px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-    #send-btn:hover {
-      background-color: #0056b3;
-    }
-    #send-btn:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
+    body { font-family: Arial; padding: 20px; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    #userInput { width: 80%; }
+    #sendBtn { width: 18%; }
   </style>
 </head>
 <body>
-  <div id="chat-container">
-    <div id="chat-messages">
-      <div class="message bot">¡Hola! Soy tu asistente IA. ¿En qué puedo ayudarte?</div>
-    </div>
-    <div id="input-area">
-      <input type="text" id="user-input" placeholder="Escribe tu mensaje..." autocomplete="off" />
-      <button id="send-btn">Enviar</button>
-    </div>
-  </div>
+  <h2>Chatbot con OpenAI</h2>
+  <div id="chat"></div>
+  <input type="text" id="userInput" placeholder="Escribe algo...">
+  <button id="sendBtn">Enviar</button>
 
   <script>
-    const chatMessages = document.getElementById('chat-messages');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
+    const chat = document.getElementById('chat');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
 
-    function addMessage(text, sender) {
-      const messageDiv = document.createElement('div');
-      messageDiv.classList.add('message', sender);
-      messageDiv.textContent = text;
-      chatMessages.appendChild(messageDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
+    sendBtn.addEventListener('click', async () => {
+      const input = userInput.value.trim();
+      if (!input) return;
 
-    async function sendMessage() {
-      const message = userInput.value.trim();
-      if (!message) return;
+      appendMessage('Tú', input);
+      const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input })
+      });
 
-      // Desactivar botón mientras se envía
-      sendBtn.disabled = true;
-      sendBtn.textContent = 'Enviando...';
-
-      // Mostrar mensaje del usuario
-      addMessage(message, 'user');
+      const data = await response.json();
+      appendMessage('Bot', data.reply);
       userInput.value = '';
-
-      try {
-        // ⚠️ Esta URL debe coincidir con tu backend
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ message })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          addMessage(data.reply, 'bot');
-        } else {
-          addMessage('Error: ' + (data.reply || 'Respuesta inválida del servidor'), 'bot');
-        }
-      } catch (error) {
-        console.error('Error en la petición:', error);
-        addMessage('Lo siento, hubo un problema. Intenta de nuevo.', 'bot');
-      } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Enviar';
-      }
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
     });
+
+    function appendMessage(sender, message) {
+      chat.innerHTML += `<p><strong>${sender}:</strong> ${message}</p>`;
+      chat.scrollTop = chat.scrollHeight;
+    }
   </script>
 </body>
 </html>
